@@ -80,10 +80,12 @@ for name in population:
                 COV_last14[name].append(sum(COV_delta[name][i-14:i])/a)
             a_old=a
 
+plottimeline['Dates']=[]
 a=[]
 for i in COV_conf_h:
     b=i.split('/')
     a.append(date(int(b[2])+2000,int(b[0]),int(b[1])))
+    plottimeline['Dates'].append('20'+b[2]+'-'+b[0]+'-'+b[1])
 
 plottimeline['Date'] = np.array(a, dtype=np.datetime64)
 
@@ -126,6 +128,8 @@ def plot_t():
             plottimeline[name] = COV_conf[name]
         source.data = plottimeline
         plot.line('Date', name, source=source, line_width=3, line_alpha=0.6, color=palette[n], name=name, legend_label=name)
+    plot.add_tools(HoverTool(tooltips=[('', "$name"),('',"(@Dates, $y)")]))
+    plot.legend.click_policy="hide"
     plot.legend.location='top_left'
     return plot
 
