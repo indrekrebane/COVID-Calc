@@ -14,10 +14,13 @@ plotted = set()
 plottimeline = {}
 plotcont = {}
 c_period = 7
+window=[3,5,10,5]
+window=[float(i)/sum(window) for i in window]
 #sick_time_avg = 21
 
-default_countries = ['Estonia', 'US', 'Finland', 'China', 'Latvia', 'Lithuania', 'United Kingdom', 'Germany', 'Italy', 'Spain', 'Turkey', 'Norway', 'France', 'Korea, South']
+# default_countries = ['Estonia', 'US', 'Finland', 'China', 'Latvia', 'Lithuania', 'United Kingdom', 'Germany', 'Italy', 'Spain', 'Turkey', 'Norway', 'France', 'Korea, South']
 #default_countries = ['World', 'Estonia', 'Finland', 'US', 'China']
+default_countries = ['Estonia', 'Belgium']
 
 # Read JHU data
 def readJHU(datatype):
@@ -79,7 +82,7 @@ for name in population:
 
     a_old=0
     for i,a in enumerate(COV_conf[name]):
-            COV_delta[name].append(a-a_old)
+            COV_delta[name].append(int(a)-int(a_old))
             # Predict active cases
             # if i<sick_time_avg:
             #     COV_recP[name].append(0)
@@ -89,19 +92,6 @@ for name in population:
     # COV_activeP[name]=list(map(lambda x,y,z: x-y-z,COV_conf[name],COV_ded[name],COV_recP[name]))
     # COV_apopP[name]=list(map(lambda x: x/population[name],COV_activeP[name]))
 
-# def calc_lastP(period):
-#     for name in population:
-#         COV_lastP[name]=[]
-#         a_old=0
-#         for i,a in enumerate(COV_active[name]):
-#             if a < 100: # zero out cont stats for < hundred cases
-#                 COV_lastP[name].append(0)
-#             elif i<period:
-#                 COV_lastP[name].append(sum(COV_delta[name][:i])/a)
-#             else:
-#                 COV_lastP[name].append(sum(COV_delta[name][i-period:i])/a)
-#             a_old=a
-
 def calc_lastP(period):
     for name in population:
         COV_lastP[name]=[]
@@ -110,14 +100,18 @@ def calc_lastP(period):
             if a < 100: # zero out cont stats for < 100 cases
                 COV_lastP[name].append(0)
             elif i<(len(COV_active[name])-period):
-                # COV_lastP[name].append(sum(COV_delta[name][i:i+period])/(a*period))
-                COV_lastP[name].append(sum(COV_delta[name][i:i+period])/a)
+                COV_lastP[name].append(sum(map(lambda x, y: x*y,COV_delta[name][i+period-len(window):i+period],window))/a)
             else: # last cases are misrepresenting
-                # COV_lastP[name].append(sum(COV_delta[name][i:])/a)
                 COV_lastP[name].append(0)
             a_old=a
 
 calc_lastP(c_period)
+
+# print('c',COV_conf['Belgium'])
+# print('d',COV_delta['Belgium'])
+# print('a',COV_active['Belgium'])
+# print('ap',COV_apop['Belgium'])
+# print('l',COV_lastP['Belgium'])
 
 plottimeline['Dates']=[]
 a=[]
@@ -140,7 +134,7 @@ for i,name in enumerate(list(population)):
 checkbox = CheckboxGroup(labels=list(population), active=a)
 btn_clear = Button(label="Clear countries", button_type="success")
 btng_main = CheckboxButtonGroup(labels=[ "Active", "Conf", "Recov", "Dead", "aPop"], active=[0])
-slide_c_period = Slider(start=1, end=14, value=(c_period), step=1, title="Cont. period")
+slide_c_period = Slider(start=len(window), end=14, value=(c_period), step=1, title="Cont. period")
 
 # test data
 # name='Estonia'
@@ -185,7 +179,7 @@ def plot_t():
 def plot_c():
     source = ColumnDataSource(data=plotcont)
     plot = figure(x_axis_type='log', y_axis_type='linear', 
-                  x_range=(10**-6, 10**-2), y_range=(0,5), 
+                  x_range=(10**-6, 10**-2), #y_range=(0,5), 
                   plot_height=800, plot_width=1600, title="plotcont",
                   tools="crosshair,pan,reset,save,box_zoom,wheel_zoom")
     for i,n in enumerate(checkbox.active):
