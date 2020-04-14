@@ -13,7 +13,8 @@ population = {}
 plotted = set()
 plottimeline = {}
 plotcont = {}
-c_period = 5
+c_period = 7
+#sick_time_avg = 21
 
 default_countries = ['Estonia', 'US', 'Finland', 'China', 'Latvia', 'Lithuania', 'United Kingdom', 'Germany', 'Italy', 'Spain', 'Turkey', 'Norway', 'France', 'Korea, South']
 #default_countries = ['World', 'Estonia', 'Finland', 'US', 'China']
@@ -59,14 +60,18 @@ for country, pop in population.items():
         print(country)
 
 COV_active = {}
+# COV_activeP = {}
 COV_delta = {}
 COV_lastP = {}
 COV_apop = {}
+# COV_apopP = {}
+# COV_recP = {}
 
 
 for name in population:
     COV_active[name]=list(map(lambda x,y,z: x-y-z,COV_conf[name],COV_ded[name],COV_rec[name]))
     COV_delta[name]=[]
+    # COV_recP[name]=[]
     # Any new countries added that do not have population match?
     if population[name]==0:
         print('population 0: ' + name + ' ' + population[name])
@@ -75,7 +80,14 @@ for name in population:
     a_old=0
     for i,a in enumerate(COV_conf[name]):
             COV_delta[name].append(a-a_old)
+            # Predict active cases
+            # if i<sick_time_avg:
+            #     COV_recP[name].append(0)
+            # else:
+            #     COV_recP[name].append(COV_recP[name][i-1]+COV_delta[name][i-sick_time_avg]-(COV_ded[name][i]-COV_ded[name][i-1]))
             a_old=a
+    # COV_activeP[name]=list(map(lambda x,y,z: x-y-z,COV_conf[name],COV_ded[name],COV_recP[name]))
+    # COV_apopP[name]=list(map(lambda x: x/population[name],COV_activeP[name]))
 
 # def calc_lastP(period):
 #     for name in population:
@@ -98,6 +110,7 @@ def calc_lastP(period):
             if a < 100: # zero out cont stats for < 100 cases
                 COV_lastP[name].append(0)
             elif i<(len(COV_active[name])-period):
+                # COV_lastP[name].append(sum(COV_delta[name][i:i+period])/(a*period))
                 COV_lastP[name].append(sum(COV_delta[name][i:i+period])/a)
             else: # last cases are misrepresenting
                 # COV_lastP[name].append(sum(COV_delta[name][i:])/a)
@@ -179,9 +192,14 @@ def plot_c():
         name=checkbox.labels[n]
         if name+'_aPop' not in plottimeline:
             plottimeline[name+'_aPop'] = COV_apop[name]
+        # if name+'_aPopP' not in plottimeline:
+        #     plottimeline[name+'_aPopP'] = COV_apopP[name]
         if name+'_lastP' not in plottimeline:
             plottimeline[name+'_lastP'] = [float('NaN') if x==0 else x for x in COV_lastP[name]]
+        # if name+'_actP' not in plottimeline:
+            # plottimeline[name+'_actP'] = COV_activeP[name]
         plot.line(name+'_aPop', name+'_lastP', source=plottimeline, line_width=2, line_alpha=0.6, color=palette[n], name=name+'_lastP', legend_label=name)
+        # plot.line(name+'_aPop', name+'_aPopP', source=plottimeline, line_width=2, line_alpha=0.6, color=palette[n], name=name+'_actP', legend_label=name)
 
     plot.add_tools(HoverTool(tooltips=[('', "$name,@Dates"),('',"($x, @$name)")]))
     plot.legend.click_policy="hide"
