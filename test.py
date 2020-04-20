@@ -16,11 +16,12 @@ plotcont = {}
 c_period = 7
 window=[3,5,10,5]
 window=[float(i)/sum(window) for i in window]
-#sick_time_avg = 21
+sick_time_avg = 21
 
 # default_countries = ['Estonia', 'US', 'Finland', 'China', 'Latvia', 'Lithuania', 'United Kingdom', 'Germany', 'Italy', 'Spain', 'Turkey', 'Norway', 'France', 'Korea, South']
+default_countries = ['Estonia', 'US', 'Finland', 'China', 'Latvia', 'Lithuania', 'United Kingdom', 'Germany', 'Italy', 'Spain', 'Iceland', 'Sweden', 'France', 'Korea, South']
 #default_countries = ['World', 'Estonia', 'Finland', 'US', 'China']
-default_countries = ['Estonia', 'Belgium']
+# default_countries = ['Estonia', 'Belgium']
 
 # Read JHU data
 def readJHU(datatype):
@@ -63,18 +64,19 @@ for country, pop in population.items():
         print(country)
 
 COV_active = {}
-# COV_activeP = {}
+COV_activeP = {}
 COV_delta = {}
 COV_lastP = {}
 COV_apop = {}
-# COV_apopP = {}
-# COV_recP = {}
+COV_apopP = {}
+COV_recP = {}
+COV_aPredF = {}
 
 
 for name in population:
     COV_active[name]=list(map(lambda x,y,z: x-y-z,COV_conf[name],COV_ded[name],COV_rec[name]))
     COV_delta[name]=[]
-    # COV_recP[name]=[]
+    COV_recP[name]=[]
     # Any new countries added that do not have population match?
     if population[name]==0:
         print('population 0: ' + name + ' ' + population[name])
@@ -82,22 +84,23 @@ for name in population:
 
     a_old=0
     for i,a in enumerate(COV_conf[name]):
-            COV_delta[name].append(int(a)-int(a_old))
-            # Predict active cases
-            # if i<sick_time_avg:
-            #     COV_recP[name].append(0)
-            # else:
-            #     COV_recP[name].append(COV_recP[name][i-1]+COV_delta[name][i-sick_time_avg]-(COV_ded[name][i]-COV_ded[name][i-1]))
-            a_old=a
-    # COV_activeP[name]=list(map(lambda x,y,z: x-y-z,COV_conf[name],COV_ded[name],COV_recP[name]))
-    # COV_apopP[name]=list(map(lambda x: x/population[name],COV_activeP[name]))
+        COV_delta[name].append(int(a)-int(a_old))
+        # Predict active cases
+        if i<sick_time_avg:
+            COV_recP[name].append(0)
+        else:
+            COV_recP[name].append(COV_recP[name][i-1]+COV_delta[name][i-sick_time_avg]-(COV_ded[name][i]-COV_ded[name][i-1]))
+        a_old=a
+    COV_activeP[name]=list(map(lambda x,y,z: x-y-z,COV_conf[name],COV_ded[name],COV_recP[name]))
+    COV_apopP[name]=list(map(lambda x: x/population[name],COV_activeP[name]))
+    COV_aPredF[name]=list(map(lambda x,y: x/(y+1),COV_activeP[name],COV_active[name]))
 
 def calc_lastP(period):
     for name in population:
         COV_lastP[name]=[]
         a_old=0
         for i,a in enumerate(COV_active[name]):
-            if a < 100: # zero out cont stats for < 100 cases
+            if a < 40: # zero out cont stats for < 100 cases
                 COV_lastP[name].append(0)
             elif i<(len(COV_active[name])-period):
                 COV_lastP[name].append(sum(map(lambda x, y: x*y,COV_delta[name][i+period-len(window):i+period],window))/a)
@@ -178,8 +181,9 @@ def plot_t():
 
 def plot_c():
     source = ColumnDataSource(data=plotcont)
-    plot = figure(x_axis_type='log', y_axis_type='linear', 
-                  x_range=(10**-6, 10**-2), #y_range=(0,5), 
+    # plot = figure(x_axis_type='log', y_axis_type='linear', 
+    plot = figure(x_axis_type='log', y_axis_type='log',
+                  x_range=(10**-6, 10**-2), #y_range=(0,0.5), 
                   plot_height=800, plot_width=1600, title="plotcont",
                   tools="crosshair,pan,reset,save,box_zoom,wheel_zoom")
     for i,n in enumerate(checkbox.active):
@@ -188,12 +192,15 @@ def plot_c():
             plottimeline[name+'_aPop'] = COV_apop[name]
         # if name+'_aPopP' not in plottimeline:
         #     plottimeline[name+'_aPopP'] = COV_apopP[name]
+        # if name+'_aPredF' not in plottimeline:
+        #     plottimeline[name+'_aPredF'] = COV_aPredF[name]
         if name+'_lastP' not in plottimeline:
             plottimeline[name+'_lastP'] = [float('NaN') if x==0 else x for x in COV_lastP[name]]
         # if name+'_actP' not in plottimeline:
             # plottimeline[name+'_actP'] = COV_activeP[name]
         plot.line(name+'_aPop', name+'_lastP', source=plottimeline, line_width=2, line_alpha=0.6, color=palette[n], name=name+'_lastP', legend_label=name)
-        # plot.line(name+'_aPop', name+'_aPopP', source=plottimeline, line_width=2, line_alpha=0.6, color=palette[n], name=name+'_actP', legend_label=name)
+        # plot.line(name+'_aPop', name+'_aPopP', source=plottimeline, line_width=2, line_alpha=0.6, color=palette[n], name=name+'_aPopP', legend_label=name)
+        # plot.line(name+'_aPop', name+'_aPredF', source=plottimeline, line_width=2, line_alpha=0.6, color=palette[n], name=name+'_aPredF', legend_label=name)
 
     plot.add_tools(HoverTool(tooltips=[('', "$name,@Dates"),('',"($x, @$name)")]))
     plot.legend.click_policy="hide"
