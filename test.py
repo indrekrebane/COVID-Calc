@@ -16,7 +16,7 @@ plotcont = {}
 c_period = 7
 window=[3,5,10,5]
 window=[float(i)/sum(window) for i in window]
-sick_time_avg = 21
+sick_time_avg = 15
 
 # default_countries = ['Estonia', 'US', 'Finland', 'China', 'Latvia', 'Lithuania', 'United Kingdom', 'Germany', 'Italy', 'Spain', 'Turkey', 'Norway', 'France', 'Korea, South']
 default_countries = ['Estonia', 'US', 'Finland', 'China', 'Latvia', 'Lithuania', 'United Kingdom', 'Germany', 'Italy', 'Spain', 'Iceland', 'Sweden', 'France', 'Korea, South']
